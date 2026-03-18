@@ -1,0 +1,8 @@
+# Curse you, Apple
+.DS_Store
+
+# Crusty Rusty
+/target
+
+# Don't look
+.env
