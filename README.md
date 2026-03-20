@@ -1,6 +1,6 @@
-[![No AI](https://custom-icon-badges.demolab.com/badge/No%20AI-2f2f2f?logo=non-ai&logoColor=white&logoSize=auto)](#)
+# 🕳️ Miasma
 
-# Miasma
+[![No AI](https://custom-icon-badges.demolab.com/badge/No%20AI-2f2f2f?logo=non-ai&logoColor=white&logoSize=auto)](#)
 
 > [!NOTE]
 > This is a work in progress. When it's ready, well, this NOTE won't be here.
@@ -22,3 +22,7 @@ _Miasma_ is mean to be fast and lightweight - you should not have to waste compu
 ## More Information
 
 **TODO**
+
+## Development
+
+Contributions are welcome! Please note that any issues or pull requests that are primarily AI-generated will be automatically closed.
