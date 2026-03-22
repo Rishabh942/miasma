@@ -13,16 +13,16 @@ use url::Url;
 #[derive(Parser, Debug, Clone)]
 pub struct MiasmaConfig {
     /// port to listen for requests
-    #[arg(short, long, default_value_t = 9999)]
+    #[arg(short = 'p', long, default_value_t = 9999)]
     pub port: u16,
 
-    /// maximum number of connections - if exceeded, respond with a 429
-    #[arg(short, long, default_value_t = 10_000)]
-    pub max_connections: u32,
+    /// maximum number of in-flight requests - if exceeded, miasma responds with a 429 error
+    #[arg(short = 'c', long, default_value_t = 2_500, value_parser = clap::value_parser!(u32).range(1..))]
+    pub max_in_flight: u32,
 
     /// number of links to include in each response
-    #[arg(short, long, default_value_t = 5)]
-    pub links_per_response: u8,
+    #[arg(short = 'l', long, default_value_t = 5)]
+    pub link_count: u8,
 
     /// prefix for embedded links
     #[arg(long, default_value_t = LinkPrefix(String::from("/")))]
