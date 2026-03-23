@@ -1,3 +1,9 @@
+use std::fmt::Write;
+
+use async_stream::stream;
+use bytes::Bytes;
+use futures::{Stream, StreamExt};
+use tokio::sync::OwnedSemaphorePermit;
 use uuid::Uuid;
 
 use crate::config::LinkPrefix;
@@ -12,22 +18,40 @@ pub struct HtmlBuilder {
 
 impl HtmlBuilder {
     /// Build the HTML string response.
-    pub async fn build_html_str(
+    pub fn build_html_stream(
         &self,
-        poison: &str,
+        mut poison: impl Stream<Item = Result<Bytes, reqwest::Error>> + Unpin,
         link_count: u8,
         link_prefix: &LinkPrefix,
-    ) -> String {
-        let links: String = (0..link_count)
-            // uuid as the link suffix so scrapers never see the same link twice
-            .map(|_| Uuid::new_v4())
-            .map(|id| format!("<li><a href=\"{link_prefix}{id}\">Code Example {id}</a></li>"))
-            .collect();
+        permit: OwnedSemaphorePermit,
+    ) -> impl Stream<Item = Result<Bytes, reqwest::Error>> {
+        stream! {
+            let _permit = permit;
+            yield Ok(Bytes::from(self.start_to_poison));
 
-        format!(
-            "{}{poison}{}{links}{}",
-            self.start_to_poison, self.poison_to_links, self.links_to_end
-        )
+            while let Some(chunk) = poison.next().await {
+                yield chunk;
+            }
+
+            yield Ok(Bytes::from(self.poison_to_links));
+
+            let mut links = Box::pin(Self::build_links_stream(link_count, &link_prefix));
+            while let Some(chunk) = links.next().await {
+                yield Ok(chunk);
+            }
+
+            yield Ok(Bytes::from(self.links_to_end));
+        }
+    }
+
+    fn build_links_stream(link_count: u8, link_prefix: &LinkPrefix) -> impl Stream<Item = Bytes> {
+        stream! {
+            for _ in 0..link_count {
+                let mut buf = String::with_capacity(128);
+                _ = write!(&mut buf, "<li><a href=\"{link_prefix}{id}\">Code Example {id}</a></li>", id = Uuid::new_v4());
+                yield Bytes::from(buf.into_bytes());
+            }
+        }
     }
 }
 impl HtmlBuilder {

@@ -3,28 +3,30 @@ mod poison;
 
 use std::sync::Arc;
 
-use axum::{http::StatusCode, response::Html};
+use axum::{
+    body::Body,
+    http::{Response, StatusCode},
+    response::IntoResponse,
+};
+use reqwest::header;
 use tokio::sync::{Semaphore, TryAcquireError};
 
-use crate::MiasmaConfig;
-
-// TODO: stream resonse rather than creating HTML struct
-// TODO: compress response to save on bandwith costs
+use crate::config::MiasmaConfig;
 
 /// Miasma's poison serving trap.
-pub async fn serve_poison(
-    config: &MiasmaConfig,
-    sem: Arc<Semaphore>,
-) -> (StatusCode, Html<String>) {
-    let _permit = match sem.try_acquire() {
+pub async fn serve_poison(config: &'static MiasmaConfig, sem: Arc<Semaphore>) -> impl IntoResponse {
+    let permit = match sem.try_acquire_owned() {
         Ok(p) => p,
         Err(e) => match e {
-            // TODO: include Retry-After header
             TryAcquireError::NoPermits => {
-                return (StatusCode::TOO_MANY_REQUESTS, Html(String::new()));
+                return Response::builder()
+                    .status(StatusCode::TOO_MANY_REQUESTS)
+                    .header(header::RETRY_AFTER, 5)
+                    .body(Body::empty())
+                    .expect("this should never fail");
             }
             TryAcquireError::Closed => {
-                return (StatusCode::INTERNAL_SERVER_ERROR, Html(String::new()));
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
             }
         },
     };
@@ -32,14 +34,24 @@ pub async fn serve_poison(
     let poison = match poison::fetch_poison(&config.poison_source).await {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Error fetching from poison source: {e}");
-            return (StatusCode::INTERNAL_SERVER_ERROR, Html(String::new()));
+            eprintln!("Error fetching from {}: {e}", config.poison_source);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
 
-    let page = html_builder::POSION_PAGE
-        .build_html_str(&poison, config.link_count, &config.link_prefix)
-        .await;
+    let stream = html_builder::POSION_PAGE.build_html_stream(
+        poison,
+        config.link_count,
+        &config.link_prefix,
+        permit,
+    );
 
-    (StatusCode::OK, Html(page))
+    // TODO: gzip compress response to save on bandwith costs
+    Response::builder()
+        .header(header::CONTENT_TYPE, "text/html")
+        .body(Body::from_stream(stream))
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to build poison route response: {e}");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        })
 }

@@ -2,36 +2,32 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use axum::routing::get;
-use miasma::{MiasmaConfig, routes};
+use miasma::routes;
 use tokio::sync::Semaphore;
 
 // TODO: add async method to check version and report to user if a newer version can be installed
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let config = MiasmaConfig::parse();
-    let MiasmaConfig {
-        port,
-        host,
-        max_in_flight,
-        poison_source,
-        link_count,
-        ..
-    } = config.clone();
-
-    let in_flight_sem = Arc::new(Semaphore::new(config.max_in_flight as usize));
+    let in_flight_sem = Arc::new(Semaphore::new(miasma::CONFIG.max_in_flight as usize));
 
     let app = axum::Router::new().fallback(get(move || async move {
-        routes::serve_poison(&config, in_flight_sem).await
+        routes::serve_poison(&miasma::CONFIG, in_flight_sem).await
     }));
 
-    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}"))
+    let addr = format!("{}:{}", miasma::CONFIG.host, miasma::CONFIG.port);
+    let listener = tokio::net::TcpListener::bind(&addr)
         .await
-        .with_context(|| format!("could not bind to {host}:{port}"))?;
+        .with_context(|| format!("could not bind to {addr}"))?;
 
-    eprintln!("Listening on '{host}:{port}' with {max_in_flight} max in-flight requests...");
     eprintln!(
-        "Serving poisoned training data from '{poison_source}' with {link_count} nested links per response..."
+        "Listening on '{addr}' with {} max in-flight requests...",
+        miasma::CONFIG.max_in_flight
+    );
+    eprintln!(
+        "Serving poisoned training data from '{}' with {} nested links per response...",
+        miasma::CONFIG.poison_source,
+        miasma::CONFIG.link_count
     );
 
     axum::serve(listener, app)

@@ -2,12 +2,15 @@ use std::{
     convert::Infallible,
     fmt::{self, Display},
     str::FromStr,
+    sync::LazyLock,
 };
 
 use clap::Parser;
 use url::Url;
 
 //TODO: add option for single-threaded runtime to cut down on mem usage
+
+pub static CONFIG: LazyLock<MiasmaConfig> = LazyLock::new(|| MiasmaConfig::parse());
 
 /// miasma - serve an endless maze of poisoned training data & fight back against AI web scrapers
 #[derive(Parser, Debug, Clone)]
@@ -35,13 +38,6 @@ pub struct MiasmaConfig {
     /// poisoned training data source
     #[arg(long, default_value_t = Url::parse("https://rnsaffn.com/poison2/").unwrap())]
     pub poison_source: Url,
-}
-
-impl MiasmaConfig {
-    /// Parse from user CLI arguments.
-    pub fn parse() -> Self {
-        <Self as Parser>::parse()
-    }
 }
 
 /// Link prefix validated to start and end with '/'
