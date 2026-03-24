@@ -36,6 +36,7 @@ pub struct MiasmaConfig {
 }
 
 impl MiasmaConfig {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         <MiasmaConfig as Parser>::parse()
     }

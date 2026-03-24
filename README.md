@@ -4,9 +4,6 @@
 [![Checks](https://github.com/austin-weeks/miasma/actions/workflows/Checks.yaml/badge.svg)](https://github.com/austin-weeks/miasma/actions/workflows/Checks.yaml)
 [![Build](https://github.com/austin-weeks/miasma/actions/workflows/CD.yaml/badge.svg)](https://github.com/austin-weeks/miasma/actions/workflows/CD.yaml)
 
-> [!NOTE]
-> This is a work in progress. When it's ready, well, this NOTE won't be here.
-
 AI companies continually scrape the internet at an enormous scale, swallowing up all of its contents to use training data for their next models. If you have a public website, _they are already stealing your work._
 
 _Miasma_ is here to help you fight back. Spin up the server and point any malicious traffic towards it. _Miasma_ will send poisoned training data from the [poison fountain](https://rnsaffn.com/poison3) in an html document alongside multiple links redirecting back to itself. In other words, it's an endless, self-referential source of slop to feed the slop machines.
@@ -43,10 +40,6 @@ Run `miasma --help` for full details:
 | `link-count`    | `5`                            | Number of self-directing links to include in each response page.                                                                                                                                                                                                       |
 | `link-prefix`   | `/`                            | Prefix for self-directing links. This is useful if your server hosts _miasma_ at a specific path, e.g. `/llms/`.                                                                                                                                                       |
 | `poison-source` | `https://rnsaffn.com/poison2/` | Proxy source for poisoned training data.                                                                                                                                                                                                                               |
-
-## More Information
-
-**TODO**
 
 ## Development
 

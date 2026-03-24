@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 // TODO: add async method to check version and report to user if a newer version can be installed
 // TODO: auto update cargo pacakge version in CD
 
-pub static CONFIG: LazyLock<MiasmaConfig> = LazyLock::new(MiasmaConfig::new);
+static CONFIG: LazyLock<MiasmaConfig> = LazyLock::new(MiasmaConfig::new);
 
 fn main() -> anyhow::Result<()> {
     tokio::runtime::Builder::new_multi_thread()
