@@ -35,7 +35,7 @@ impl HtmlBuilder {
 
             yield Ok(Bytes::from(self.poison_to_links));
 
-            let mut links = Box::pin(Self::build_links_stream(link_count, &link_prefix));
+            let mut links = Box::pin(Self::build_links_stream(link_count, link_prefix));
             while let Some(chunk) = links.next().await {
                 yield Ok(chunk);
             }

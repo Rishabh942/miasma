@@ -17,6 +17,7 @@ uuid = { version = "1.22.0", features = ["v4"] }
 
 # Profile for the smallest possible binary size
 [profile.tiny]
+codegen-units = 1
 inherits = "release"
 opt-level = "z"
 lto = true
