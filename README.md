@@ -1,6 +1,8 @@
-# 🕳️ Miasma
+# 🌀 Miasma
 
 [![No AI](https://custom-icon-badges.demolab.com/badge/No%20AI-2f2f2f?logo=non-ai&logoColor=white&logoSize=auto)](#)
+[![crates.io](https://img.shields.io/crates/v/miasma?logo=rust)](https://crates.io/crates/miasma)
+[![downloads](https://img.shields.io/crates/dr/miasma?logo=rust)](https://crates.io/crates/miasma)
 [![Checks](https://github.com/austin-weeks/miasma/actions/workflows/Checks.yaml/badge.svg)](https://github.com/austin-weeks/miasma/actions/workflows/Checks.yaml)
 [![Build](https://github.com/austin-weeks/miasma/actions/workflows/CD.yaml/badge.svg)](https://github.com/austin-weeks/miasma/actions/workflows/CD.yaml)
 
@@ -12,10 +14,10 @@ _Miasma_ is meant to be fast and lightweight - you should not have to waste comp
 
 ## Installation
 
-Install from the repository using cargo (recommended):
+Install with cargo (recommended):
 
 ```sh
-cargo install --git https://github.com/austin-weeks/miasma
+cargo install miasma
 ```
 
 Or, download a pre-built binary from [releases](https://github.com/austin-weeks/miasma/releases).

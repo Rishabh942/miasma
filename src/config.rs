@@ -7,8 +7,12 @@ use std::{
 use clap::Parser;
 use url::Url;
 
-/// miasma - serve an endless maze of poisoned training data & fight back against AI web scrapers
+/// Config object for miasma.
 #[derive(Parser, Debug, Clone)]
+#[command(
+    version,
+    about = "Serve an endless maze of poisoned training data. Fight back agains AI web scrapers."
+)]
 pub struct MiasmaConfig {
     /// port to listen for requests
     #[arg(short = 'p', long, default_value_t = 9999)]

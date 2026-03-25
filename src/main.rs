@@ -1,5 +1,5 @@
 use anyhow::Context;
-use miasma::{MiasmaConfig, new_miasma_router};
+use miasma::{MiasmaConfig, check_for_new_version, new_miasma_router};
 use std::sync::LazyLock;
 
 // TODO: add async method to check version and report to user if a newer version can be installed
@@ -15,6 +15,8 @@ fn main() -> anyhow::Result<()> {
         .unwrap()
         .block_on(async {
             let app = new_miasma_router(&CONFIG);
+
+            tokio::spawn(check_for_new_version());
 
             let addr = format!("{}:{}", CONFIG.host, CONFIG.port);
             let listener = tokio::net::TcpListener::bind(&addr)
