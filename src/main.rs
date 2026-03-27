@@ -9,8 +9,6 @@ use miasma::{MiasmaConfig, check_for_new_version, new_miasma_router};
 static CONFIG: LazyLock<MiasmaConfig> = LazyLock::new(MiasmaConfig::new);
 
 fn main() -> anyhow::Result<()> {
-    eprintln!("{}\n", "Starting Miasma...".green());
-
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_name("miasma-thread")
@@ -18,6 +16,7 @@ fn main() -> anyhow::Result<()> {
         .unwrap()
         .block_on(async {
             let app = new_miasma_router(&CONFIG);
+            eprintln!("{}\n", "Starting Miasma...".green());
 
             tokio::spawn(check_for_new_version());
 

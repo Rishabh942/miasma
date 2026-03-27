@@ -14,27 +14,27 @@ use url::Url;
     about = "Serve an endless maze of poisoned training data. Fight back against AI web scrapers."
 )]
 pub struct MiasmaConfig {
-    /// port to listen for requests
+    /// Port to listen for requests
     #[arg(short = 'p', long, default_value_t = 9999)]
     pub port: u16,
 
-    /// host to listen for requests
+    /// Host to listen for requests
     #[arg(long, default_value_t = String::from("localhost") )]
     pub host: String,
 
-    /// maximum number of in-flight requests - if exceeded, miasma responds with a 429 error
+    /// Maximum number of in-flight requests - if exceeded, Miasma responds with a 429 error
     #[arg(short = 'c', long, default_value_t = 500, value_parser = clap::value_parser!(u32).range(1..))]
     pub max_in_flight: u32,
 
-    /// number of links to include in each response
+    /// Number of links to include in each response
     #[arg(short = 'l', long, default_value_t = 5)]
     pub link_count: u8,
 
-    /// prefix for embedded links
+    /// Prefix for embedded links
     #[arg(long, default_value_t = LinkPrefix(String::from("/")))]
     pub link_prefix: LinkPrefix,
 
-    /// poisoned training data source
+    /// Poisoned training data source
     #[arg(long, default_value_t = Url::parse("https://rnsaffn.com/poison2/").unwrap())]
     pub poison_source: Url,
 }
