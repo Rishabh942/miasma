@@ -8,7 +8,6 @@ static CONFIG: LazyLock<MiasmaConfig> = LazyLock::new(MiasmaConfig::new);
 
 // TODO: randomize html template content
 // TODO: improve test coverage
-// TODO: add flag to force gzip responses - this can save on bandwidth
 
 fn main() -> anyhow::Result<()> {
     tokio::runtime::Builder::new_multi_thread()

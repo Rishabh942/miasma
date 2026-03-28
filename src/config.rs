@@ -26,13 +26,17 @@ pub struct MiasmaConfig {
     #[arg(short = 'c', long, default_value_t = 500, value_parser = clap::value_parser!(u32).range(1..))]
     pub max_in_flight: u32,
 
+    /// Prefix for embedded links
+    #[arg(long, default_value_t = LinkPrefix(String::from("/")))]
+    pub link_prefix: LinkPrefix,
+
     /// Number of links to include in each response
     #[arg(short = 'l', long, default_value_t = 5)]
     pub link_count: u8,
 
-    /// Prefix for embedded links
-    #[arg(long, default_value_t = LinkPrefix(String::from("/")))]
-    pub link_prefix: LinkPrefix,
+    /// Always gzip responses regardless of client's Accept-Encoding header
+    #[arg(long, default_value_t = false)]
+    pub force_gzip: bool,
 
     /// Poisoned training data source
     #[arg(long, default_value_t = Url::parse("https://rnsaffn.com/poison2/").unwrap())]
