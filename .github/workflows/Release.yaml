@@ -27,7 +27,7 @@ jobs:
       - name: Ensure passed tag matches package version
         run: |
           VERSION=$(cargo metadata --format-version 1 --no-deps | jq -r '.packages[] | select(.name == "miasma") | .version')
-          if [[ $VERSION != ${{ inputs.version }} ]; then
+          if [[ $VERSION != ${{ inputs.version }} ]]; then
             echo "Input tag ${{ inputs.version }} does not match crate version $VERSION found in Cargo.toml" >&2
             exit 1
           fi
