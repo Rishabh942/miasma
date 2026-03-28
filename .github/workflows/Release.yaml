@@ -33,12 +33,11 @@ jobs:
           fi
 
   Run-Checks:
+    needs: Validate-Inputs
     uses: ./.github/workflows/Checks.yaml
 
   Publish-Crate:
-    needs:
-      - Run-Checks
-      - Validate-Inputs
+    needs: Run-Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

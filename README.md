@@ -3,7 +3,9 @@
 [![No AI](https://custom-icon-badges.demolab.com/badge/No%20AI-2f2f2f?logo=non-ai&logoColor=white&logoSize=auto)](#)
 [![crates.io](https://img.shields.io/crates/v/miasma?logo=rust)](https://crates.io/crates/miasma)
 [![downloads](https://img.shields.io/crates/dr/miasma?logo=rust)](https://crates.io/crates/miasma)
+[![Crate Dependencies](https://img.shields.io/deps-rs/miasma/latest?logo=rust)](https://crates.io/crates/miasma/0.1.15/dependencies)
 [![Checks](https://github.com/austin-weeks/miasma/actions/workflows/Checks.yaml/badge.svg)](https://github.com/austin-weeks/miasma/actions/workflows/Checks.yaml)
+[![GitHub commits since latest release](https://img.shields.io/github/commits-since/austin-weeks/miasma/latest?logo=github)](#)
 
 AI companies continually scrape the internet at an enormous scale, swallowing up all of its contents to use as training data for their next models. If you have a public website, _they are already stealing your work._
 
@@ -14,7 +16,7 @@ _Miasma_ is very fast and has a minimal memory footprint - you should not have t
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/austin-weeks/miasma/main/.github/images/response-dark.png">
-    <img width="675" src="https://raw.githubusercontent.com/austin-weeks/miasma/main/.github/images/response-light.png" alt="Sample response from Miasma.">
+    <img width="625" src="https://raw.githubusercontent.com/austin-weeks/miasma/main/.github/images/response-light.png" alt="Sample response from Miasma.">
   </picture>
 </p>
 
@@ -106,9 +108,9 @@ Let's deploy and watch as multi-billion dollar companies greedily eat from our e
   </picture>
 </p>
 
-Be sure to steer friendly bots and search engines away from _Miasma_!
+### `robots.txt`
 
-#### robots.txt
+Be sure to protect friendly bots and search engines from _Miasma_ in your `robots.txt`!
 
 ```text
 User-agent: Googlebot
