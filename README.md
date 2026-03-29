@@ -30,26 +30,19 @@ cargo install miasma
 
 Or, download a pre-built binary from [releases](https://github.com/austin-weeks/miasma/releases).
 
-## Usage
+## Quick Start
 
-Start the server:
+Start _Miasma_ with default configuration:
 
 ```sh
 miasma
 ```
 
-### Options
+View all available [configuration options](#configuration):
 
-Run `miasma --help` for full details:
-
-| Option          | Default                        | Description                                                                                                                                                                                                                                                             |
-| --------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `port`          | `9999`                         | The port the server should bind to.                                                                                                                                                                                                                                     |
-| `host`          | `localhost`                    | The host address the server should bind to.                                                                                                                                                                                                                             |
-| `max-in-flight` | `500`                          | Maximum number of allowable in-flight requests. Requests received when in flight is exceeded will recieve a _429_ response. **_Miasma's_ memory usage scales directly with the number of in-flight requests - set this to a lower value if memory usage is a concern.** |
-| `link-count`    | `5`                            | Number of self-directing links to include in each response page.                                                                                                                                                                                                        |
-| `link-prefix`   | `/`                            | Prefix for self-directing links. This should be the path where you host _Miasma_, e.g. `/bots`.                                                                                                                                                                         |
-| `poison-source` | `https://rnsaffn.com/poison2/` | Proxy source for poisoned training data.                                                                                                                                                                                                                                |
+```sh
+miasma --help
+```
 
 ## How to Trap Scrapers
 
@@ -121,6 +114,20 @@ User-agent: SomeOtherNiceBot
 Disallow: /bots
 Allow: /
 ```
+
+## Configuration
+
+_Miasma_ can be configured via its CLI options:
+
+| Option          | Default                        | Description                                                                                                                                                                                                                                                             |
+| --------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `port`          | `9999`                         | The port the server should bind to.                                                                                                                                                                                                                                     |
+| `host`          | `localhost`                    | The host address the server should bind to.                                                                                                                                                                                                                             |
+| `max-in-flight` | `500`                          | Maximum number of allowable in-flight requests. Requests received when in flight is exceeded will receive a _429_ response. **_Miasma's_ memory usage scales directly with the number of in-flight requests - set this to a lower value if memory usage is a concern.** |
+| `link-prefix`   | `/`                            | Prefix for self-directing links. This should be the path where you host _Miasma_, e.g. `/bots`.                                                                                                                                                                         |
+| `link-count`    | `5`                            | Number of self-directing links to include in each response page.                                                                                                                                                                                                        |
+| `force-gzip`    | `false`                        | Always gzip responses regardless of the client's _Accept-Encoding_ header. **Forcing compression can help reduce egress costs.**                                                                                                                                        |
+| `poison-source` | `https://rnsaffn.com/poison2/` | Proxy source for poisoned training data.                                                                                                                                                                                                                                |
 
 ## Development
 

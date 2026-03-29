@@ -16,7 +16,7 @@ use crate::config::MiasmaConfig;
 pub async fn serve_poison(
     config: &'static MiasmaConfig,
     sem: Arc<Semaphore>,
-    should_gzip: bool,
+    client_accepts_gzip: bool,
 ) -> impl IntoResponse {
     let permit = match sem.try_acquire_owned() {
         Ok(p) => p,
@@ -41,6 +41,8 @@ pub async fn serve_poison(
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
+
+    let should_gzip = client_accepts_gzip || config.force_gzip;
 
     let stream = html_builder::POSION_PAGE.build_html_stream(
         poison,
