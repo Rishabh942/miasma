@@ -6,9 +6,6 @@ use miasma::{MiasmaConfig, check_for_new_version, new_miasma_router};
 
 static CONFIG: LazyLock<MiasmaConfig> = LazyLock::new(MiasmaConfig::new);
 
-// TODO: randomize html template content
-// TODO: improve test coverage
-
 fn main() -> anyhow::Result<()> {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -21,16 +18,12 @@ fn main() -> anyhow::Result<()> {
 
             tokio::spawn(check_for_new_version());
 
-            let addr = format!("{}:{}", CONFIG.host, CONFIG.port);
+            let addr = CONFIG.address();
             let listener = tokio::net::TcpListener::bind(&addr)
                 .await
                 .with_context(|| format!("could not bind to {addr}").red())?;
 
-            eprintln!(
-                "Listening on {} with {} max in-flight requests. Serving poisoned training data from {} with {} links per response...",
-                addr.cyan(), CONFIG.max_in_flight.to_string().cyan(),
-                CONFIG.poison_source.to_string().cyan(), CONFIG.link_count.to_string().cyan()
-            );
+            CONFIG.print_config_info();
 
             axum::serve(listener, app)
                 .await

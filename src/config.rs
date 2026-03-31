@@ -5,6 +5,7 @@ use std::{
 };
 
 use clap::Parser;
+use colored::Colorize;
 use url::Url;
 
 /// Config object for miasma.
@@ -47,6 +48,31 @@ impl MiasmaConfig {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         <MiasmaConfig as Parser>::parse()
+    }
+
+    /// Print configuration information to stderr.
+    pub fn print_config_info(&self) {
+        let gzip_msg = if self.force_gzip {
+            format!(" and {}", "forced gzip compression".cyan())
+        } else {
+            "".to_owned()
+        };
+        eprintln!(
+            "Listening on {} with {} max in-flight requests{gzip_msg}...",
+            self.address().cyan(),
+            self.max_in_flight.to_string().cyan()
+        );
+        eprintln!(
+            "Serving data from {} at {} with {} links per response...",
+            self.poison_source.to_string().cyan(),
+            self.link_prefix.to_string().cyan(),
+            self.link_count.to_string().cyan(),
+        );
+    }
+
+    /// Get the full 'host:port' address.
+    pub fn address(&self) -> String {
+        format!("{}:{}", self.host, self.port)
     }
 }
 
