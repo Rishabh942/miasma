@@ -1,4 +1,5 @@
 use std::fmt::Write;
+use std::pin::pin;
 
 use async_stream::stream;
 use bytes::Bytes;
@@ -8,7 +9,7 @@ use uuid::Uuid;
 
 use crate::config::LinkPrefix;
 
-pub const POSION_PAGE: HtmlBuilder = HtmlBuilder::new(include_str!("index.html"));
+pub const POISON_PAGE: HtmlBuilder = HtmlBuilder::new(include_str!("index.html"));
 
 pub struct HtmlBuilder {
     start_to_poison: &'static str,
@@ -20,48 +21,23 @@ impl HtmlBuilder {
     /// Build the HTML string response.
     pub fn build_html_stream(
         &self,
-        mut poison: impl Stream<Item = Result<Bytes, reqwest::Error>> + Unpin,
+        poison: impl Stream<Item = Result<Bytes, anyhow::Error>>,
         link_count: u8,
         link_prefix: &LinkPrefix,
         permit: OwnedSemaphorePermit,
-    ) -> impl Stream<Item = Result<Bytes, reqwest::Error>> {
+    ) -> impl Stream<Item = Result<Bytes, anyhow::Error>> {
         stream! {
             let _permit = permit;
             yield Ok(Bytes::from(self.start_to_poison));
 
+            let mut poison = pin!(poison);
             while let Some(chunk) = poison.next().await {
-                let Ok(mut chunk) = chunk else {
-                    yield chunk;
-                    continue;
-                };
-
-                loop {
-                    let Some((i, esc)) = chunk
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(i, b)| match *b {
-                            b'<' => Some((i, &b"&lt;"[..])),
-                            b'>' => Some((i, b"&gt;")),
-                            b'&' => Some((i, b"&amp;")),
-                            _ => None,
-                        })
-                        .next()
-                    else {
-                        yield Ok(chunk);
-                        break;
-                    };
-
-                    let remaining = chunk.split_off(i + 1);
-                    chunk.truncate(i);
-                    yield Ok(chunk);
-                    yield Ok(esc.into());
-                    chunk = remaining;
-                }
+                yield chunk;
             }
 
             yield Ok(Bytes::from(self.poison_to_links));
 
-            let mut links = Box::pin(Self::build_links_stream(link_count, link_prefix));
+            let mut links = pin!(Self::build_links_stream(link_count, link_prefix));
             while let Some(chunk) = links.next().await {
                 yield Ok(chunk);
             }
