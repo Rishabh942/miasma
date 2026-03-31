@@ -39,6 +39,10 @@ pub struct MiasmaConfig {
     #[arg(long, default_value_t = false)]
     pub force_gzip: bool,
 
+    /// Don't escape HTML characters in the poison source's responses
+    #[arg(long, default_value_t = false)]
+    pub unsafe_allow_html: bool,
+
     /// Poisoned training data source
     #[arg(long, default_value_t = Url::parse("https://rnsaffn.com/poison2/").unwrap())]
     pub poison_source: Url,
@@ -66,8 +70,11 @@ impl MiasmaConfig {
             "Serving data from {} at {} with {} links per response...",
             self.poison_source.to_string().cyan(),
             self.link_prefix.to_string().cyan(),
-            self.link_count.to_string().cyan(),
+            self.link_count.to_string().cyan()
         );
+        if self.unsafe_allow_html {
+            eprintln!("{} HTML escaping is disabled...", "Warning:".red());
+        }
     }
 
     /// Get the full 'host:port' address.
