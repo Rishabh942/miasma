@@ -23,6 +23,11 @@ pub struct MiasmaConfig {
     #[arg(long, default_value_t = String::from("localhost") )]
     pub host: String,
 
+    /// Bind to the specified Unix socket rather than a TCP address
+    #[cfg(unix)]
+    #[arg(long, default_value = None)]
+    pub unix_socket: Option<String>,
+
     /// Maximum number of in-flight requests - if exceeded, Miasma responds with a 429 error
     #[arg(short = 'c', long, default_value_t = 500, value_parser = clap::value_parser!(u32).range(1..))]
     pub max_in_flight: u32,
@@ -46,11 +51,6 @@ pub struct MiasmaConfig {
     /// Poisoned training data source
     #[arg(long, default_value_t = Url::parse("https://rnsaffn.com/poison2/").unwrap())]
     pub poison_source: Url,
-
-    /// The path used to listen for requests, overrides port and host
-    #[cfg(unix)]
-    #[arg(long, default_value = None)]
-    pub unix_socket: Option<String>,
 }
 
 impl MiasmaConfig {
@@ -66,9 +66,17 @@ impl MiasmaConfig {
         } else {
             "".to_owned()
         };
+        #[cfg(unix)]
+        let binding = match &self.unix_socket {
+            Some(socket) => socket.cyan(),
+            None => self.address().cyan(),
+        };
+        #[cfg(not(unix))]
+        let binding = self.address().cyan();
+
         eprintln!(
             "Listening on {} with {} max in-flight requests{gzip_msg}...",
-            self.address().cyan(),
+            binding,
             self.max_in_flight.to_string().cyan()
         );
         eprintln!(
@@ -83,15 +91,6 @@ impl MiasmaConfig {
     }
 
     /// Get the full 'host:port' address.
-    #[cfg(unix)]
-    pub fn address(&self) -> String {
-        if let Some(s) = &self.unix_socket {
-            s.to_string()
-        } else {
-            format!("{}:{}", self.host, self.port)
-        }
-    }
-    #[cfg(not(unix))]
     pub fn address(&self) -> String {
         format!("{}:{}", self.host, self.port)
     }
