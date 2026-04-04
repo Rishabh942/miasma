@@ -7,7 +7,8 @@ use futures::{Stream, StreamExt};
 use tokio::sync::OwnedSemaphorePermit;
 use uuid::Uuid;
 
-use crate::config::LinkPrefix;
+use super::{LinkSettings, LinkSettingsInner};
+use crate::{MiasmaStream, QueryParams};
 
 pub const POISON_PAGE: HtmlBuilder = HtmlBuilder::new(include_str!("index.html"));
 
@@ -21,11 +22,10 @@ impl HtmlBuilder {
     /// Build the HTML string response.
     pub fn build_html_stream(
         &self,
-        poison: impl Stream<Item = Result<Bytes, anyhow::Error>>,
-        link_count: u8,
-        link_prefix: &LinkPrefix,
+        poison: impl MiasmaStream,
+        link_settings: LinkSettings,
         permit: OwnedSemaphorePermit,
-    ) -> impl Stream<Item = Result<Bytes, anyhow::Error>> {
+    ) -> impl MiasmaStream {
         stream! {
             let _permit = permit;
             yield Ok(Bytes::from(self.start_to_poison));
@@ -37,20 +37,34 @@ impl HtmlBuilder {
 
             yield Ok(Bytes::from(self.poison_to_links));
 
-            let mut links = pin!(Self::build_links_stream(link_count, link_prefix));
-            while let Some(chunk) = links.next().await {
-                yield Ok(chunk);
+            match link_settings {
+                LinkSettings::NoLinks => yield Ok(Bytes::from_static(b"None")),
+                LinkSettings::Links(l) => {
+                    let mut links = pin!(Self::build_links_stream(&l));
+                    while let Some(chunk) = links.next().await {
+                        yield Ok(chunk);
+                    }
+                },
             }
 
             yield Ok(Bytes::from(self.links_to_end));
         }
     }
 
-    fn build_links_stream(link_count: u8, link_prefix: &LinkPrefix) -> impl Stream<Item = Bytes> {
+    fn build_links_stream(link_settings: &LinkSettingsInner) -> impl Stream<Item = Bytes> {
+        let params = match link_settings.next_depth {
+            None => String::new(),
+            Some(c) => format!("?{}={}", QueryParams::CURRENT_DEPTH_QUERY_PARAM, c),
+        };
+
         stream! {
-            for _ in 0..link_count {
+            for _ in 0..link_settings.count {
                 let mut buf = String::with_capacity(128);
-                _ = write!(&mut buf, "<li><a href=\"{link_prefix}{id}\">Code Example {id}</a></li>", id = Uuid::new_v4());
+                _ = write!(
+                    &mut buf, "<li><a href=\"{prefix}{id}{params}\">Code Example {id}</a></li>",
+                    prefix = &link_settings.prefix,
+                    id = Uuid::new_v4(),
+                );
                 yield Bytes::from(buf.into_bytes());
             }
         }

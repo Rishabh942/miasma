@@ -1,12 +1,15 @@
 use std::{
     convert::Infallible,
     fmt::{self, Display},
+    num::ParseIntError,
     str::FromStr,
 };
 
 use clap::Parser;
 use colored::Colorize;
 use url::Url;
+
+use crate::utils::calculate_nodes;
 
 /// Config object for miasma.
 #[derive(Parser, Debug, Clone)]
@@ -37,8 +40,12 @@ pub struct MiasmaConfig {
     pub link_prefix: LinkPrefix,
 
     /// Number of links to include in each response
-    #[arg(short = 'l', long, default_value_t = 5)]
+    #[arg(long, default_value_t = 5)]
     pub link_count: u8,
+
+    /// Stop generating links after the scraper reaches the specified depth
+    #[arg(long, default_value_t = MaxDepth(None))]
+    pub max_depth: MaxDepth,
 
     /// Always gzip responses regardless of client's Accept-Encoding header
     #[arg(long, default_value_t = false)]
@@ -80,11 +87,24 @@ impl MiasmaConfig {
             self.max_in_flight.to_string().cyan()
         );
         eprintln!(
-            "Serving data from {} at {} with {} links per response...",
+            "Serving poisoned training data from {} at {} with {} links per response and a max depth of {}...",
             self.poison_source.to_string().cyan(),
             self.link_prefix.to_string().cyan(),
-            self.link_count.to_string().cyan()
+            self.link_count.to_string().cyan(),
+            self.max_depth.to_string().cyan(),
         );
+
+        let est_pages_per_bot = match self.max_depth.0 {
+            None => "infinite".cyan(),
+            Some(depth) => calculate_nodes::page_count_per_bot(self.link_count, depth)
+                .map(|n| n.to_string().green())
+                .unwrap_or_else(|| "too big!".red()),
+        };
+        eprintln!(
+            "Assuming all links are explored, each scraper will consume {} poison pages.",
+            est_pages_per_bot
+        );
+
         if self.unsafe_allow_html {
             eprintln!("{} HTML escaping is disabled...", "Warning:".red());
         }
@@ -96,8 +116,28 @@ impl MiasmaConfig {
     }
 }
 
+#[cfg(test)]
+impl Default for MiasmaConfig {
+    fn default() -> Self {
+        Self {
+            port: 0,
+            host: String::new(),
+            #[cfg(unix)]
+            unix_socket: None,
+            max_in_flight: 0,
+            link_prefix: LinkPrefix(String::new()),
+            link_count: 0,
+            max_depth: MaxDepth(None),
+            force_gzip: false,
+            unsafe_allow_html: false,
+            poison_source: Url::parse("https://example.com").unwrap(),
+        }
+    }
+}
+
 /// Link prefix validated to start and end with '/'
 #[derive(Debug, Clone)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct LinkPrefix(String);
 
 impl Display for LinkPrefix {
@@ -118,5 +158,31 @@ impl FromStr for LinkPrefix {
             prefix.push('/');
         }
         Ok(Self(prefix))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MaxDepth(pub Option<u32>);
+
+impl Display for MaxDepth {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            Some(v) => f.write_str(&v.to_string()),
+            None => f.write_str("none"),
+        }
+    }
+}
+
+impl FromStr for MaxDepth {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.eq_ignore_ascii_case("none") {
+            return Ok(Self(None));
+        }
+        match s.parse::<u32>() {
+            Ok(v) => Ok(Self(Some(v))),
+            Err(e) => Err(e),
+        }
     }
 }

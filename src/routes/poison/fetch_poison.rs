@@ -1,12 +1,11 @@
 use std::{pin::pin, sync::LazyLock, time::Duration};
 
 use async_stream::stream;
-use bytes::Bytes;
-use futures::{Stream, StreamExt, TryStreamExt};
+use futures::{StreamExt, TryStreamExt};
 use reqwest::Client;
 use url::Url;
 
-use crate::{USER_AGENT, utils::html_escaper::escape_html_stream};
+use crate::{MiasmaStream, USER_AGENT, utils::html_escaper::escape_html_stream};
 
 static CLIENT: LazyLock<Client> = LazyLock::new(|| {
     reqwest::Client::builder()
@@ -21,7 +20,7 @@ static CLIENT: LazyLock<Client> = LazyLock::new(|| {
 pub async fn stream_poison(
     poison_source: &Url,
     disable_html_escaping: bool,
-) -> Result<impl Stream<Item = Result<Bytes, anyhow::Error>>, anyhow::Error> {
+) -> Result<impl MiasmaStream, anyhow::Error> {
     let mut poison_stream = CLIENT
         .get(poison_source.clone())
         .send()
