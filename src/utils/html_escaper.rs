@@ -1,12 +1,11 @@
 use async_stream::stream;
-use bytes::Bytes;
-use futures::{Stream, StreamExt};
+use futures::StreamExt;
 use std::pin::pin;
 
+use crate::MiasmaStream;
+
 /// Escape HTML sequences in the given stream.
-pub fn escape_html_stream(
-    html_stream: impl Stream<Item = Result<Bytes, anyhow::Error>>,
-) -> impl Stream<Item = Result<Bytes, anyhow::Error>> {
+pub fn escape_html_stream(html_stream: impl MiasmaStream) -> impl MiasmaStream {
     stream! {
         let mut html_stream = pin!(html_stream);
         while let Some(chunk_res) = html_stream.next().await {
@@ -45,11 +44,11 @@ mod test {
     use super::*;
     use bytes::Bytes;
 
-    fn as_stream(s: &'static str) -> impl Stream<Item = Result<Bytes, anyhow::Error>> {
+    fn as_stream(s: &'static str) -> impl MiasmaStream {
         stream! { yield Ok(Bytes::from_static(s.as_bytes())) }
     }
 
-    async fn drain_stream(stream: impl Stream<Item = Result<Bytes, anyhow::Error>>) -> String {
+    async fn drain_stream(stream: impl MiasmaStream) -> String {
         let mut buf = String::new();
         let mut stream = pin!(stream);
         while let Some(chunk) = stream.next().await {

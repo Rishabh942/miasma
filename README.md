@@ -109,10 +109,14 @@ This will match all variations of the `/naughty-bots` path -> `/naughty-bots`, `
 
 Lastly, we'll start _Miasma_ and specify `/naughty-bots` as the link prefix. This instructs _Miasma_ to start links with `/naughty-bots/`, which ensures scrapers are properly routed through our _Nginx_ proxy back to _Miasma_.
 
-We'll also limit the number of max in-flight connections to 50. At 50 connections, we can expect 50-60 MB peak memory usage. Note that any requests exceeding this limit will immediately receive a **429** response rather than being added to a queue.
+Let's limit the number of max in-flight connections to 50. At 50 connections, we can expect 50-60 MB peak memory usage. Note that any requests exceeding this limit will immediately receive a **429** response rather than being added to a queue.
+
+We'll also force _Miasma_ to gzip all responses regardless of scrapers' `Accept-Encoding` header. Since gzipped responses are significantly smaller, this will help us cut down on egress costs.
+
+While we could keep scrapers trapped forever, we'll use the link count and max depth options to let scrapers go after they consume ~100K poisoned pages. With this setup, _Miasma_ will send around **250MB** in total per scraper.
 
 ```sh
-miasma --link-prefix '/naughty-bots' -p 9855 -c 50
+miasma --link-prefix '/naughty-bots' -p 9855 -c 50 --force-gzip --link-count 5 --max-depth 8
 ```
 
 ### Enjoy!
@@ -146,6 +150,7 @@ _Miasma_ can be configured via its CLI options:
 | `max-in-flight`     | `500`                          | Maximum number of allowable in-flight requests. Requests received when in flight is exceeded will receive a _429_ response. **_Miasma's_ memory usage scales directly with the number of in-flight requests - set this to a lower value if memory usage is a concern.** |
 | `link-prefix`       | `/`                            | Prefix for self-directing links. This should be the path where you host _Miasma_, e.g. `/naughty-bots`.                                                                                                                                                                 |
 | `link-count`        | `5`                            | Number of self-directing links to include in each response page.                                                                                                                                                                                                        |
+| `max-depth`         | `none`                         | Stop generating links once the scraper reaches the specified depth. This allows you to cut off scrapers after serving a desired amount of poison. _Use this in tandem with `link-count` to keep the numbers of active scrapers down to a manageable level._             |
 | `force-gzip`        | `false`                        | Always gzip responses regardless of the client's _Accept-Encoding_ header. **Forcing compression can help reduce egress costs.**                                                                                                                                        |
 | `unsafe-allow-html` | `false`                        | Don't escape HTML characters in the poison source's responses. Escaping is enabled by default to prevent unintended client-side JavaScript execution. **Use this option with care.**                                                                                    |
 | `poison-source`     | `https://rnsaffn.com/poison2/` | Proxy source for poisoned training data.                                                                                                                                                                                                                                |

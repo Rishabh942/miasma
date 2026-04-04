@@ -4,36 +4,18 @@ use axum::{
     response::IntoResponse,
 };
 use reqwest::header;
-use std::sync::Arc;
-use tokio::sync::{Semaphore, TryAcquireError};
+use tokio::sync::OwnedSemaphorePermit;
 
-use super::fetch_poison::stream_poison;
-use super::gzip;
-use super::html_builder;
+use super::{LinkSettings, fetch_poison::stream_poison, gzip, html_builder};
 use crate::config::MiasmaConfig;
 
 /// Miasma's poison serving trap.
 pub async fn serve_poison(
     config: &'static MiasmaConfig,
-    sem: Arc<Semaphore>,
-    client_accepts_gzip: bool,
+    in_flight_permit: OwnedSemaphorePermit,
+    gzip_response: bool,
+    link_settings: LinkSettings<'static>,
 ) -> impl IntoResponse {
-    let permit = match sem.try_acquire_owned() {
-        Ok(p) => p,
-        Err(e) => match e {
-            TryAcquireError::NoPermits => {
-                return Response::builder()
-                    .status(StatusCode::TOO_MANY_REQUESTS)
-                    .header(header::RETRY_AFTER, 5)
-                    .body(Body::empty())
-                    .unwrap();
-            }
-            TryAcquireError::Closed => {
-                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-            }
-        },
-    };
-
     let poison = match stream_poison(&config.poison_source, config.unsafe_allow_html).await {
         Ok(p) => p,
         Err(e) => {
@@ -42,22 +24,17 @@ pub async fn serve_poison(
         }
     };
 
-    let should_gzip = client_accepts_gzip || config.force_gzip;
+    let stream =
+        html_builder::POISON_PAGE.build_html_stream(poison, link_settings, in_flight_permit);
 
-    let stream = html_builder::POISON_PAGE.build_html_stream(
-        poison,
-        config.link_count,
-        &config.link_prefix,
-        permit,
-    );
-    let body_stream = if should_gzip {
+    let body_stream = if gzip_response {
         Body::from_stream(gzip::gzip_stream(stream))
     } else {
         Body::from_stream(stream)
     };
 
     let mut builder = Response::builder().header(header::CONTENT_TYPE, "text/html");
-    if should_gzip {
+    if gzip_response {
         builder = builder.header(header::CONTENT_ENCODING, "gzip");
     }
     builder.body(body_stream).unwrap_or_else(|e| {
