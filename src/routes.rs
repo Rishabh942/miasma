@@ -73,3 +73,66 @@ pub fn new_miasma_router(config: &'static MiasmaConfig) -> Router {
             .into_response()
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode, header::RETRY_AFTER},
+    };
+    use std::sync::LazyLock;
+    use tower::ServiceExt;
+
+    static TEST_CONFIG: LazyLock<MiasmaConfig> = LazyLock::new(|| MiasmaConfig {
+        max_in_flight: 1,
+        ..Default::default()
+    });
+
+    // This hits the poison source over the network; move to an integration test suite eventually.
+    #[tokio::test]
+    async fn happy_path_works() {
+        let app = new_miasma_router(&TEST_CONFIG);
+
+        let response = app
+            .oneshot(Request::builder().uri("/foo").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        // could be 500 if the network is down or 200 if it works, but shouldn't be 429.
+        assert_ne!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+    }
+
+    #[tokio::test]
+    async fn returns_429_when_max_in_flight_reached() {
+        let app = new_miasma_router(&TEST_CONFIG);
+        let req1 = Request::builder().uri("/foo").body(Body::empty()).unwrap();
+        let req2 = Request::builder().uri("/foo").body(Body::empty()).unwrap();
+
+        let (res1, res2) = tokio::join!(app.clone().oneshot(req1), app.oneshot(req2));
+
+        let res1 = res1.unwrap();
+        let res2 = res2.unwrap();
+
+        let limited = if res1.status() == StatusCode::TOO_MANY_REQUESTS {
+            res1
+        } else if res2.status() == StatusCode::TOO_MANY_REQUESTS {
+            res2
+        } else {
+            panic!(
+                "expected one 429, got {} and {}",
+                res1.status(),
+                res2.status()
+            );
+        };
+
+        assert_eq!(limited.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_eq!(
+            limited
+                .headers()
+                .get(RETRY_AFTER)
+                .and_then(|v| v.to_str().ok()),
+            Some("5")
+        );
+    }
+}
