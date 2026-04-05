@@ -23,6 +23,12 @@ tokio-util = { version = "0.7.18", features = ["io"] }
 url = "2.5.8"
 uuid = { version = "1.22.0", features = ["v4"] }
 
+[dev-dependencies]
+tower = { version = "0.5.2", features = ["util"] }
+http-body-util = "0.1.2"
+gag = "1.0.0"
+serial_test = "3.4.0"
+
 # On Linux, use default TLS
 [target.'cfg(target_os = "linux")'.dependencies]
 reqwest = { version = "0.13.2", default-features = false, features = ["default-tls", "gzip", "json", "http2", "charset", "system-proxy", "stream"] }

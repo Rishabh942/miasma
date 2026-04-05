@@ -186,3 +186,43 @@ impl FromStr for MaxDepth {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn link_prefix_validation() {
+        let cases = [
+            ("/", "/"),
+            ("foo", "/foo/"),
+            ("/foo", "/foo/"),
+            ("foo/", "/foo/"),
+            ("/foo/", "/foo/"),
+        ];
+
+        for (input, expected) in cases {
+            let prefix = LinkPrefix::from_str(input).unwrap();
+            assert_eq!(prefix.to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn config_address() {
+        let config = MiasmaConfig {
+            port: 8080,
+            host: "127.0.0.1".to_string(),
+            #[cfg(unix)]
+            unix_socket: None,
+            max_in_flight: 100,
+            link_prefix: LinkPrefix::from_str("/").unwrap(),
+            link_count: 5,
+            max_depth: MaxDepth(None),
+            force_gzip: false,
+            unsafe_allow_html: false,
+            poison_source: Url::parse("https://example.com").unwrap(),
+        };
+
+        assert_eq!(config.address(), "127.0.0.1:8080");
+    }
+}
