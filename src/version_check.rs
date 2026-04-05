@@ -1,5 +1,6 @@
 use colored::Colorize;
 use serde::Deserialize;
+use std::io::Write;
 use std::time::Duration;
 
 use crate::USER_AGENT;
@@ -30,17 +31,7 @@ pub async fn check_for_new_version() {
             .await?;
 
         let latest = resp.crate_info.max_stable_version;
-
-        if VERSION != latest {
-            eprintln!("\n------- New Version Available -------");
-            eprintln!(
-                "Installed ({}) -> Latest ({})",
-                VERSION.red(),
-                latest.green()
-            );
-            eprintln!("To update, run: {}", "cargo install miasma".blue());
-            eprintln!("-------------------------------------\n");
-        }
+        print_update_message(VERSION, &latest);
 
         Ok(())
     }
@@ -49,5 +40,64 @@ pub async fn check_for_new_version() {
     #[cfg(debug_assertions)]
     if let Err(e) = _res {
         eprintln!("Failed to check for latest version: {e}");
+    }
+}
+
+fn print_update_message(current: &str, latest: &str) {
+    if current != latest {
+        // fd redirection problems with eprintln! and gag require writeln! to the live stderr handle
+        let mut stderr = std::io::stderr().lock();
+        let _ = writeln!(stderr, "\n------- New Version Available -------");
+        let _ = writeln!(
+            stderr,
+            "Installed ({}) -> Latest ({})",
+            current.red(),
+            latest.green()
+        );
+        let _ = writeln!(stderr, "To update, run: {}", "cargo install miasma".blue());
+        let _ = writeln!(stderr, "-------------------------------------\n");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gag::BufferRedirect;
+    use serial_test::serial;
+    use std::io::Read;
+
+    #[test]
+    #[serial]
+    fn version_mismatch_prints_to_stderr() {
+        let capture = BufferRedirect::stderr().unwrap();
+        print_update_message("0.1.0", "0.1.1");
+        let _ = std::io::stderr().flush();
+        let mut buffer = capture.into_inner();
+        let mut output = String::new();
+        buffer.read_to_string(&mut output).unwrap();
+        assert!(
+            output.contains("New Version Available"),
+            "expected update banner: {output:?}"
+        );
+        assert!(
+            output.contains("0.1.0"),
+            "expected current version: {output:?}"
+        );
+        assert!(
+            output.contains("0.1.1"),
+            "expected latest version: {output:?}"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn version_match_prints_nothing_to_stderr() {
+        let capture = BufferRedirect::stderr().unwrap();
+        print_update_message("0.1.0", "0.1.0");
+        let _ = std::io::stderr().flush();
+        let mut buffer = capture.into_inner();
+        let mut output = String::new();
+        buffer.read_to_string(&mut output).unwrap();
+        assert!(output.is_empty(), "expected no stderr: {output:?}");
     }
 }
